@@ -29,7 +29,7 @@ csl: Harvard2.csl
 library(foreign)
 library(knitr)
 library(metafor)
-#setwd("Desktop/Statistical/Meta Analysis/") test
+setwd("") test
 ```
 
 # Meta analysis Basics
@@ -115,7 +115,7 @@ Some examples and basic caluclation of the ESs are.
     * log(RR) = $log(\frac{a/a+b}{c/c+d})$
     * log(V) = $\frac{1}{a} + \frac{1}{c}+ \frac{1}{a+b}+ \frac{1}{c+d}$
 * Incidence rate
-    * IR =  $log(\frac{a/a+b}{c/c+d})$
+    * log(IR) =  $log(\frac{a/a+b}{c/c+d})$
     * 
 * Risk Difference:
     * $\frac{a}{a+b} - \frac{c}{c+d}$
