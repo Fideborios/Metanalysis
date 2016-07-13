@@ -1,0 +1,585 @@
+---
+title: "Meta analysis"
+author: ""
+date: ""
+output:
+  pdf_document:
+    highlight: pygments
+    includes:
+      in_header: headerlogo.tex
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+  html_document:
+    css: APAStyle.css
+    fig_caption: yes
+    highlight: espresso
+    includes:
+      in_header: headerlogo.tex
+    theme: null
+  word_document:
+    reference: APA.docx
+fontsize: 12pt
+csl: Harvard2.csl
+---
+
+\newpage
+
+```{r LoadingTheLibraries ,echo=FALSE,comment= "",message=FALSE}
+library(foreign)
+library(rmeta)
+library(knitr)
+library(metafor)
+#setwd("Desktop/Statistical/Meta Analysis/")
+```
+
+# Meta analysis Basics
+
+Meta Analysis is quantitative methodology used for combining researches that have a common subject, in order to make an overall conclusion.
+
+As in many statistical methods Metanalysis has advantages and disadvantages.
+
+pros:
+
+* Provides an objective synthesis of many related studies or experiments for a particular problem, in order to drive a single overall conclusion.
+* This methodology allows an partiality (BIAS) assessment.
+
+cons:
+
+* one number cannot summarise a research field": A good meta analysis will model variability in true effect sizes and model the uncertainty of estimates.
+* "the file drawer problem invalidates meta-analysis": Funnel plots and related tools allows you to see whether sample size is related to effect size in order to check for publication bias. Good meta-analyses endeavour to obtain unpublished studies. This issue is shared with narrative studies.
+* "Mixing apples and oranges": Good meta-analyses provide a rigorous coding system for categorising included studies and justifying the inclusion and exclusion of studies in the meta-analysis. After studies have been classified, moderator analysis can be performed to see whether effect sizes vary across study type.
+* "Important studies are ignored": You can code for the evaluated quality of the studies. Large samples can be given greater weighting.
+* "meta analysis can disagree with randomised trials":
+* "meta-analyses are performed poorly": This is merely an argument for improving the standards of meta-analytic methods.
+* "Is a narrative review better?": Many of the critiques of meta-analysis (e.g., publication bias) are shared by narrative reviews. It is just that the methods of inference are less explicit and less rigorous in narrative reviews.
+
+\newpage
+
+# Which Metanalysis  method to use?
+
+
+A common question in Metanalysis is `which analysis to use?` 
+It all depends on what type of Data we have and if we want a Fixed, Random or Mixed Effects model.
+
+\begin{center}
+ \begin{tabular}{|p{2,5cm} p{3cm} p{4cm} p{4cm}|}
+ \hline
+ Type of data & Effect measure & Fixed-effect methods & Random-effects methods \\  
+ \hline\hline
+ Dichotomous & Odds ratio (OR) & Mantel-Haenszel (M-H) & Mantel-Haenszel (M-H) \\
+ 
+   &  & Inverse variance (IV) & Inverse variance (IV)\\ 
+ 
+  & & Peto & \\
+  
+   & Risk ratio (RR) & Mantel-Haenszel (M-H) & Mantel-Haenszel (M-H)\\
+   
+   &  & Inverse variance (IV) & Inverse variance (IV)\\ 
+ 
+ & Risk difference (RD) & Mantel-Haenszel (M-H) & Mantel-Haenszel (M-H)\\
+   
+   &  & Inverse variance (IV) & Inverse variance (IV)\\
+ \hline
+ Continuous & Mean difference (MD) & Inverse variance (IV) & Inverse variance (IV) \\
+ 
+ 	
+ & Standardized mean difference (SMD) & Inverse variance (IV) & Inverse variance (IV)\\
+ \hline
+ O – E and Variance & \textit{User-specified} (default ‘Peto odds ratio’) & Peto & None \\
+ \hline
+ Generic inverse variance & \textit{User-specified} & Inverse variance (IV) & Inverse variance (IV) \\
+ \hline
+Other data & \textit{User-specified} & None & None\\
+ \hline
+\end{tabular}
+\end{center}
+
+
+
+Some notes:
+
+* An "effect" could be almost any aggregate statistic of interest:
+    * Mean, Mean difference, Mean change
+    * Risk ratio, Odds ratio, Risk difference
+    * Incidence rate, Prevalence, Proportion
+    * Correlation
+* Conventional meta-analytic models assume normality of ESs.
+* To normalize ESs, a log-transform is common.
+
+Some examples and basic caluclation of the ESs are.
+
+* Log-Odds Ratio: 
+    * log(OR) = $log(\frac{a*d}{b*c})$
+    * log(V) = $\frac{1}{a} + \frac{1}{b}+ \frac{1}{c}+ \frac{1}{d}$
+* Log-Relative Risk:
+    * log(RR) = $log(\frac{a/a+b}{c/c+d})$
+    * log(V) = $\frac{1}{a} + \frac{1}{c}+ \frac{1}{a+b}+ \frac{1}{c+d}$
+* Incidence rate
+    * IR =  $log(\frac{a/a+b}{c/c+d})$
+    * 
+* Risk Difference:
+    * $\frac{a}{a+b} - \frac{c}{c+d}$
+    * Variance= $\frac{axb}{(a+b)^3} - \frac{cxd}{(c+d)^3}$
+
+
+\newpage 
+
+# Fixed Effects Model 
+
+The **beta_full_prac1.dta** file contains results from 20 randomized clinical trials on the use of beta-blockers for the prevention of esophageal bleeding in patients with cirrhosis. 
+
+
+The file is described below:
+
+```{r loading beta_full_prac1.dta,echo=FALSE,comment= ""}
+Meta_data=read.dta("beta_full_prac1.dta")
+attach(Meta_data)
+
+kable(Meta_data, caption =  "The  20 randomized clinical trials")
+```
+
+* The `Ttotal` variable shows the total amount of patients in the `treatment` group.
+* The `Tcases` variable shows the number of cases in the `treatment` group.
+* The `Ctotal` variable shows the total amount of patients in the `Cases` group.
+* The `Ccases` variable shows the number of cases in the `Cases` group.
+* The quality variable contains a score of "quality" of each study based on several criteria (quality of randomization, compliance, patient withdrawals, etc.). The range of the variable that ranges from 0 to 100 (higher values indicate better quality studies) whereas for studies published only as abstracts there is no recorded value. 
+Other variables are described by the corresponding variable labels.
+
+
+## Inverse Variance weights
+A good package for Metanalysis is the `metafor` which provides a more step by step procedure.
+Firstly we shall calculate effect sizes (in our case Odds Ratios) and outcome measures we are interested in, using the `escalc() function`. The `escalc() function` main option is the measure, in which we declare the E.S. or outcome measure that will be calculated. Since we choose the Odds Ratio we need to provide the a, b etc for each 2x2 matrix.
+
+For example for the ith study the matrix is:
+
+```{r 2x2MatrixTable,echo=FALSE}
+M= matrix(c( "a (Tcases)"," b (Ccases)","a+b" , "c (Tnocases)",
+"d (Cnocases) ", "c+d","a+c (Ttotal)", "b+d (Ctotal)", "N"),nrow = 3,ncol = 3,dimnames = list(c("Disease = Yes","Disease = No",""), c("Treatment","Control","Total")),byrow = T)
+kable(M)
+
+```
+
+So we input the a, b, c, d, n1,n2 needed to calculate the log-OR for each study.
+
+
+```{r ecalc,echo=FALSE}
+
+dat<-escalc("OR", ai = Meta_data$Tcases, 
+            bi =  Meta_data$Tnocases, 
+            ci =  Meta_data$Ccases,  
+            di = Meta_data$Cnocases, 
+            n1i = Meta_data$Ttotal , 
+            n2i = Meta_data$Ctotal   )
+
+```
+
+
+```{r summary dat,echo=FALSE,comment="",message=FALSE}
+kable(summary(dat),caption = "Log-Scale Odds Ratios, Variance, 
+      Standard Error and 95% CI bounds")
+```
+
+The output:
+
+* `yi`: log-OR of the studies
+* `vi`: The Variance of the OR
+* `sei`: The Standard Error (the square root of the above measure)
+* `zi`:  The Z-statistic for the significance
+* `ci.lb`: The Lower bound C.I.
+* `ci.ub`: The Upper bound C.I.
+
+Since everything is calculated in the log scale, we need to exponentiate the measure we are interested.
+
+```{r RMA.Fixed,echo=FALSE,comment="",fig.height=9}
+kable(exp(summary(dat)[1:5,c(1,5,6)]),caption = "First 5 studies Odds Ratio with 95% bounds of each study")
+
+res <- rma(yi, vi, data=dat, measure="OR", method="FE",digits = 3)
+```
+
+
+```{r RMA.Fixed.Results,echo=FALSE,comment="",fig.height=10}
+res
+```
+
+
+In the summary above we may observe that the overall Fixed Effects model Estimate is log_Odds: -0.4807 (0.62 exponentiated) with 95% C.I. (-0.7137 ,-0.2476 ) in exponentiated form [0.49,0.78], the result is statistically significant in the 5% level of significance. The summary also suggests that the studies are highly Heterogeneous with p-value lower than 0.0001 !! The test of heterogeneity is a $\chi^2$ test with k degrees of freedom where k is the number of the studies -1.
+
+
+```{r Forest.Fixed,comment="",fig.height=9}
+forest(res,showweights = T,col="red", atransf = exp,refline = 0,
+       alim=c(-5,max(as.numeric(res$yi.f + 1.96*sqrt(res$vi.f))))
+       )
+```
+
+A funnel plot shows the observed effect sizes or outcomes on the x-axis against some measure of precision of the observed effect sizes or outcomes on the y-axis. Based on Sterne and Egger (2001), the recommended choice for the y-axis is the standard error (in decreasing order) and this is also the default for the funnel() function in the metafor package. In the absence of publication bias and heterogeneity, one would then expect to see the points forming a funnel shape, with the majority of the points falling inside of the pseudo-confidence region with bounds 
+$\hat{\theta} \pm SE$, where  $\hat{\theta}$ is the estimated effect or outcome based on the fixed-effects model and 
+SE is the standard error value from the y-axis. With other measures of precision for the y-axis, the expected shape of the funnel can be rather different. The plot below shows a variety of choices for the y-axis and how this impacts the shape of the funnel plot (and the form of the pseudo-confidence region).
+
+
+```{r Funnel.Fixed,echo=FALSE,message=FALSE,warning=FALSE,fig.height= 7.5}
+### set up 2x2 array for plotting
+par(mfrow=c(2,2))
+ 
+### draw funnel plots
+funnel(res, main="Standard Error",addtau2 = T,steps = 10)
+funnel(res, yaxis="vi", main="Sampling Variance")
+funnel(res, yaxis="seinv", main="Inverse Standard Error")
+funnel(res, yaxis="vinv", main="Inverse Sampling Variance")
+
+```
+
+### Mantel-Haenszel weights
+In `metafor` package the *default* weighting method is the Inverse-Variance as shown before. Sometime it is better to use in Metanalysis the M-H weighting method.
+So if that was the case then we would have the following results:
+
+```{r M-H.RMA,comment=""}
+res<-rma.mh("OR", ai = Meta_data$Tcases, 
+            bi =  Meta_data$Tnocases, 
+            ci =  Meta_data$Ccases,  
+            di = Meta_data$Cnocases, 
+            n1i = Meta_data$Ttotal , 
+            n2i = Meta_data$Ctotal ,digits = 3  )
+res
+```
+
+In the summary above we may observe that the overall Fixed Effects model Estimate is log_Odds: -0.5271 (0.59 exponentiated) with 95% C.I. (-0.7412,-0.3131) in exponentiated form [0.48,0.73], the result is statistically significant in the 5% level of significance. The summary also suggests that the studies are highly Heterogeneous with p-value lower than 0.0001.
+
+The forest plot is a little bit different also:
+
+```{r Forest M-H, echo=FALSE,comment="",fig.height=9}
+forest(res,showweights = T,col="red", atransf = exp,refline = 0,
+       alim=c(-5,max(as.numeric(res$yi.f + 1.96*sqrt(res$vi.f))))
+       )
+```
+
+And the funnel plots:
+ 
+```{r Funnel M-H,echo=FALSE,message=FALSE,warning=FALSE,fig.height= 7.5}
+### set up 2x2 array for plotting
+par(mfrow=c(2,2))
+ 
+### draw funnel plots
+funnel(res, main="Standard Error",addtau2 = T,steps = 10)
+funnel(res, yaxis="vi", main="Sampling Variance")
+funnel(res, yaxis="seinv", main="Inverse Standard Error")
+funnel(res, yaxis="vinv", main="Inverse Sampling Variance")
+
+```
+
+\newpage
+
+# Calculate Fixed-Effects Model by hand
+## Effect size calculation and CI bounds
+
+We will calculate "by hand" the fixed-effects summary estimator of Odds Ratio using data on the number of patients with and without occurrence of bleeding in each arm of the respective study. 
+The Odds Ratio is calculated from the **2x2 matrix** of each study.
+
+
+```{r 2x2 Matrix OR,echo=FALSE}
+M= matrix(c( "a (Tcases)"," b (Ccases)","a+b" , "c (Tnocases)",
+"d (Cnocases) ", "c+d","a+c (Ttotal)", "b+d (Ctotal)", "N"),nrow = 3,ncol = 3,dimnames = list(c("Disease = Yes","Disease = No",""), c("Treatment","Control","Total")),byrow = T)
+kable(M)
+
+```
+
+with the following type : $OR=(a*d)/(b*c)$
+
+As we can see we miss the $c_i$ and $d_i$ but we can easily count them subtracting the cases from the total number of patients.
+
+```{r}
+
+Meta_data$Tnocases = with(Meta_data,Ttotal-Tcases)
+Meta_data$Cnocases = with(Meta_data,Ctotal-Ccases)
+```
+
+Now we can easily calculate the Odds Ratio of each study.
+
+```{r}
+Meta_data$OR=with(Meta_data,(Tcases* Cnocases)/( Ccases* Tnocases))
+```
+
+The Variance and Standard Error is easily calculated in the log-scale.
+We know that the log(Variance) = $\frac{1}{a} + \frac{1}{b}+ \frac{1}{c}+ \frac{1}{d}$ and that the Standard Error is the square root of the Variance.
+
+```{r}
+Var_logOR=1/Meta_data$Tcases+1/Meta_data$Tnocases+
+  1/Meta_data$Ccases+1/Meta_data$Cnocases
+
+SE_logOR=sqrt(Var_logOR)
+logOR=log(Meta_data$OR)
+```
+
+So we can calculate the 95% C.I. in exponentiated form.
+
+```{r}
+##qnorm(0.975) = 1.96
+Meta_data$Lower95 = exp(logOR- qnorm(0.975)*SE_logOR) 
+Meta_data$Upper95 = exp(logOR+ qnorm(0.975)*SE_logOR)
+```
+
+
+
+```{r,echo=FALSE}
+kable(cbind(Meta_data$id,round(Meta_data$OR,2),round(Meta_data$Lower95,2),round(Meta_data$Upper95,2)),
+      col.names = c("ID","Odds Ratios","Lower 95% Bound","Upper 95% Bound" ), 
+      caption = "Odds Ratios of each study with 95% C.I.")
+```
+
+\newpage
+
+## Weight Calculation 
+### Inverse-Variance weight calculation
+
+
+To find the overall Estimate of the Odds Ratios we need to calculate the weight of each research. The *default* method used to calculate the summary estimator in the `rma` function is `inverse-variance` the weights have to be calculated by the formula:
+
+$W_i = \frac{\frac{1}{V_i}}{\sum_{i=1}^{k}\frac{1}{V_i}}$ :
+
+
+```{r}
+        Wi <- 1/res$vi
+        Wi <- Wi/sum(Wi, na.rm = TRUE)
+```
+
+```{r,echo=FALSE}
+kable(cbind(Meta_data$id,round(Meta_data$OR,2),paste(round(Wi*100,2),"%"),round(Meta_data$Lower95,2),round(Meta_data$Upper95,2)),
+      col.names = c("ID","Odds Ratios","Weights (I-V method)","Lower 95% Bound","Upper 95% Bound" ), 
+      caption = "Odds Ratios of each study with 95% C.I. and Weights")
+
+```
+
+Finally we get an weighted average of the Odds Ratios and we have the pooled I-V estimate =${\bar {logOR_{pooledIV}}}={\frac {\sum \limits _{i=1}^{k}w_{i}logOR_{i}}{\sum \limits _{i=1}^{k}w_{i}}}$,
+which means:
+${\bar {logOR_{pooledIV}}}={\frac {w_{1}logOR_{1}+w_{2}logOR_{2}+\cdots +w_{n}logOR_{n}}{w_{1}+w_{2}+\cdots +w_{n}}}$
+= `r sum(Wi*logOR)` $\Rightarrow exp(\bar {logOR_{pooledIV}}) =$ `r round(exp(sum(Wi*logOR)),2)`
+
+\newpage
+
+### Mantel-Haenszel weight calculation
+
+In STATA the *default* weight calculation method is the Mantel-Haenszel which is calculated as shown below:
+
+* $W_i = \frac{(b_i * c_i)}{N_i}$ 
+
+The $b_i, c_i$ ( Ccases,Tnocases) are already available. All we need to calculate are the total number of patients both in treatment and Control in each study ($N_i$).
+```{r}
+Meta_data$Total= Meta_data$Ctotal+ Meta_data$Ttotal
+```
+
+Now we can calculate the above weights:
+
+```{r}
+Meta_data$Weight= Meta_data$Ccases* Meta_data$Tnocases/Meta_data$Total 
+```
+
+If we calculate the weights this way they add up to `r round(sum(Meta_data$Weight),2)` so a better 
+
+```{r}
+Meta_data$Relative_Weight = Meta_data$Weight*100/sum(Meta_data$Weight)
+```
+
+
+```{r,echo=FALSE}
+kable(cbind(Meta_data$id,Meta_data$Weight,Meta_data$Relative_Weight ),col.names = c("ID","Weights","Relative Weights" ), caption = "Weights and Relative Weights of the Studies")
+```
+
+Now let's calculate the M-H pooled OR of all the researches.
+
+
+```{r,echo=FALSE,comment=""}
+wOR=Meta_data$Weight*Meta_data$OR
+sumW=sum(Meta_data$Weight)
+sum_wOR=sum(wOR)
+
+MH_OR=sum_wOR/sumW
+
+MH_OR
+
+```
+
+# Random effects model
+
+In this example we will demonstrate clearly the difference that may occur if we have a huge study in our Meta-Analysis and the necessity of a random effects model.
+The `magnes.dta` file contains results from 16 randomized clinical trials that were designed to investigate the effect of magnesium intake on mortality of patients with acute myocardial infarction.
+
+The file is described below:
+
+```{r Loading magnes.dta,echo=FALSE,comment=""}
+
+Meta_data=read.dta("magnes.dta")
+kable(Meta_data)
+```
+
+* The first column shows the year the study was conducted.
+* The columns named `tot` are showing the  total amount of patients in Treatment (1) and Control (0), while 
+* The `dead` columns shows the diseased in Treatment (1) and Control (0). 
+
+We shall calculate the summary estimator for the death Odds Ratio  and create the corresponding forest-plot both in fixed (I-V weighting method) and random effects (DL) approach.
+
+\newpage
+
+First we have the Fixed-effects model.
+
+```{r MH Results ,echo=FALSE,fig.height= 12,fig.width= 9,comment=""}
+dat<-escalc("OR", 
+            ai = Meta_data$dead1,
+            bi =  Meta_data$tot1-Meta_data$dead1,
+            ci =  Meta_data$dead0, 
+            di = Meta_data$tot0 -Meta_data$dead0,
+            n1i = Meta_data$tot1 ,
+            n2i = Meta_data$tot0  )
+
+
+res1 <- rma( dat$yi  ,dat$vi, data=dat, measure="OR", method="FE",digits = 3,
+               slab=paste(Meta_data$trial,Meta_data$trialnam, Meta_data$year, sep=", "))
+summary(res1)
+```
+
+
+In the summary above we may observe that the overall Random Effects model Estimate is log_Odds: `r round(as.numeric(res1$b),3)` ( `r round(exp(as.numeric(res1$b)),3)` exponentiated) with 95% C.I. 
+(`r paste(c(round(as.numeric(res1$ci.lb),2) ,round(as.numeric(res1$ci.ub),2)), collapse="," )`) , [`r paste(c(round(exp(as.numeric(res1$ci.lb)),2) ,round(exp(as.numeric(res1$ci.ub)),2)), collapse="," )`] exponentiated . The result is not statistically significant in the 5% level of significance since p-value = `r round(res1$pval,2)`. The summary also suggests that the studies are highly Heterogeneous with p-value lower than 0.0001. 
+
+Let's have a look in the forest plot.
+
+```{r MH Forest,echo=FALSE,fig.height= 12,fig.width= 9,comment=""}
+forest(res1,showweights = T,col="red", atransf = exp,refline = 0,
+       alim=c(-5,max(as.numeric(res1$yi.f + 1.96*sqrt(res1$vi.f))))
+       )
+
+```
+
+As we may observe there is a study (ISIS-4) that has nearly the 93% of the total weight and although it seems that all the studies have a lower than 1 odds ratio this study pulls the overall pooled MH Odds Ratio to above 1.
+A good solution is to use the Random-Effects model, that will reduce the weight of this study. The method we choose is the DerSimonian-Laird, that is making the weights to be more uniformly distributed.
+
+```{r DL.Random Results,fig.height= 12,fig.width= 9,comment="",echo=FALSE}
+res <- rma(yi, vi, data=dat, measure="OR", method="DL",digits = 3,
+           slab=paste(Meta_data$trial,Meta_data$trialnam, Meta_data$year, sep=", "))
+summary(res)
+```
+
+In the summary above we may observe that the overall Random Effects model Estimate is log(Odds Ratio)= `r round(as.numeric(res$b),4)` ( `r round(exp(as.numeric(res$b)),4)` exponentiated) with 95% C.I. 
+(`r paste(c(round(as.numeric(res$ci.lb),2) ,round(as.numeric(res$ci.ub),2)), collapse="," )`) , [`r paste(c(round(exp(as.numeric(res$ci.lb)),2) ,round(exp(as.numeric(res$ci.ub)),2)), collapse="," )`] exponentiated. 
+
+The result is statistically significant in the 5% level of significance since p-value < .0001. 
+
+The Cochran's test for Heterogeneity is the same as before. 
+
+In the Random effects model there are some outputs that need attention.
+
+The amount of heterogeneity is calculated $\tau^2$= 0.224 $\Rightarrow \tau =sqrt(0.224)=0.473$, the $I^2= (Q - df)/Q*100$%  where Q is Cochran's heterogeneity statistic and df the degrees of freedom. The $I^2$ lies between 0% and 100%. A value of 0% indicates no observed heterogeneity, while larger values show increasing heterogeneity. 
+Finally the $H^2$ is a measure of variability 
+
+The forest plot is a little bit different also. The weights have changed and now ISIS-4 has a weight nearly 17%.
+
+```{r DL.Random Forest,fig.height= 12,fig.width= 9,comment="",echo=FALSE}
+forest(res,showweights = T,col="red", atransf = exp,refline = 0,
+       alim=c(-5,max(as.numeric(res$yi.f + 1.96*sqrt(res$vi.f))))
+       )
+
+```
+
+\newpage
+
+**What is the difference between the results of Fixed versus Random effects model?**
+
+In the fixed effects analysis ISIS-4 study takes a huge burden compared to the others because ISIS has a much larger size As a result the final pooled MH odds ratio is calculated mainly out of this study. 
+On the other hand in the random effects analysis the weight of this study is much smaller and comparable with the LIMIT-2 study which is approximately 30 times smaller.  This affected pooled OR because it is calculated "more" uniformly by all the studies.
+
+Let's see the difference into the calculation of the Empirical Bayes Estimate a
+
+
+Note however that the Empirical Bayes estimate the effect of ISIS-4 study is essentially the same as the individual assessment of the study (the very small within-study variance results in shrinkage effect is negligible).
+
+```{r,echo=FALSE,fig.height=10,comment=""}
+blup(res,transf = exp,digits = 2)
+
+blups <- blup(res,transf = exp,digits = 2)$pred
+plot(NA, NA, xlim=c(.8,2.4), ylim=c(0,1.5), pch=19, xaxt="n", bty="n", xlab="", ylab="Odds Ratio",main="Shrinkage Effect of studies")
+segments(rep(1,16), exp(dat$yi), rep(2,16), blups, col="darkgray")
+points(rep(1,16), exp(dat$yi), pch=12,col="red")
+points(rep(2,16), blups, pch=19)
+axis(side=1, at=c(1,2), labels=c("Observed\nValues", "BLUPs"), lwd=0)
+segments(.7, exp(res$b), 2.15, exp(res$b), lty="dotted")
+text(2.3, exp(res$b), expression(hat(mu)== 0.48), cex=1)
+text(1,exp(dat$yi), labels = res$slab, pos = 4)
+text(2,blups, labels = res$slab, pos = 4)
+```
+
+
+## Weight Calculation
+### DerSimonian-Laird (default) method 
+
+The weights in the DerSimonian-Laird method are calculated through the following equations.
+$W_i= \frac{1}{v_i + \tau^2}$ and then we calculate as usual a weighted average for the log(OR)=$\bar{logOR}= \frac{\sum_{1}^{k}W_i*OR_i}{\sum_{1}^{k}W_i} \Rightarrow \bar{OR}= exp(logOR))$
+
+```{r DL weight Calculation,comment=""}
+
+wi=1/(res$vi + res$tau2)
+exp(sum(wi*res$yi)/sum(wi))
+
+```
+
+
+
+### Other Estimators
+
+The DerSimonian-Laird estimation is the most simple of all and is the default method in R, Stata and SAS.
+But there are seven other estimation methods :
+
+* Hedges (‘variance component estimator’ or ‘Cochran estimator’) estimator
+* Hunter-Schmidt estimator
+* Sidik-Jonkman estimator
+* maximum-likelihood estimator
+* restricted maximum-likelihood estimator
+* empirical Bayes estimator
+
+
+
+
+```{r All Methods Random Results,fig.height= 12,fig.width= 9,comment="",echo=FALSE}
+
+res.DL  <- rma(yi, vi, method="DL", data=dat,digits = 3)
+res.HE  <- rma(yi, vi, method="HE", data=dat,digits = 3)
+res.HS   <- rma(yi, vi, method="HS",   data=dat,digits = 3)
+res.SJ   <- rma(yi, vi, method="SJ",   data=dat,digits = 3)
+res.ML   <- rma(yi, vi, method="ML",   data=dat,digits = 3)
+res.REML <- rma(yi, vi, method="REML", data=dat,digits = 3)
+res.EB   <- rma(yi, vi, method="EB",   data=dat,digits = 3)
+res.PM  <- rma(yi, vi, method="PM", data=dat,digits = 3)
+
+
+res.SJ2  <- rma(yi, vi, method="SJ",   data=dat,digits = 3, control=list(tau2.init=res.HE$tau2))
+res.CA2 <- rma(yi, vi, method="GENQ", weights=1/(vi + res.HE$tau2), data=dat,digits = 3)
+res.DL2 <- rma(yi, vi, method="GENQ", weights=1/(vi + res.DL$tau2), data=dat,digits = 3)
+res.CA2 <- rma(yi, vi, tau2=res.CA2$tau2, data=dat,digits = 3)
+res.DL2 <- rma(yi, vi, tau2=res.DL2$tau2, data=dat,digits = 3)
+
+res.all <- list(res.DL,res.HE, res.PM,res.HS,res.SJ,res.ML,res.REML,res.EB,res.SJ2,res.CA2, res.DL2)
+names(res.all) <- c("DerSimonian-Laird","Hedges","Paule-Mandel",
+                    "Hunter-Schmid","Sidik-Jonkman","Maximum Likelihood ",
+                    "Restricted Maximum Likelihood","Empirical Bayes ")
+
+
+res.all[1:8]
+```
+
+Objects res.DL , res.HE, and res.PM include the results when using the Paule-Mandel, Cochran, and DerSimonian-Laird estimators (the Cochran estimator is referred to as the Hedges estimator in the metafor package).Next, we obtain the results using the empirical Bayes (res.EB) , maximum-likelihood (res.ML)  and restricted maximum-likelihood estimators (res.REML) , the Hunter-Schmidt estimator (res.HS) , and the Sidik-Jonkman (res.SJ) estimator.
+
+The next two models (res.CA2 and res.DL2) use the generalized Q-statistic estimator of 
+$\tau^2$ (referred to as the general method-of-moments estimator in the paper), where the weights are set equal to the usual (random-effects model) inverse-variance weights, once using the Cochran and once using the DerSimonian-Laird estimator values. This will provide us with the two-step Cochran and two-step DerSimonian-Laird estimator values. However, note that the weights specified are used not only to estimate 
+$\tau^2$  but also to estimate $\mu$ the average effect. If we now want to use the usual inverse-variance weights but using the two-step estimator values, we have to fit each model one more time, but this time with specified values for $\tau^2$ as obtained from the two-step procedure.
+
+Finally, to obtain the improved Sidik-Jonkman estimator, we must use the control argument to set the initial estimate of $\tau^2$ to that of the Cochran estimator, which then gets updated using the method described by Sidik and Jonkman.
+
+
+
+```{r,comment="",echo=FALSE}
+results <- rbind(
+tau = sapply(res.all, function(x) sqrt(x$tau2)),
+mu  = sapply(res.all, function(x)  exp(x$b)),
+se  = sapply(res.all, function(x) sqrt(vcov(x))))
+colnames(results) <- c("DL", "HE", "PM", "HS", "SJ", "ML", "REML", "EB", "SJ2", "CA2", "DL2")
+round(t(results), 4)
+```
+
