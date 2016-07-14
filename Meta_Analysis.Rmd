@@ -21,6 +21,7 @@ output:
     reference: APA.docx
 fontsize: 12pt
 csl: Harvard2.csl
+bibliography: citations.bib
 ---
 
 \newpage
@@ -29,7 +30,7 @@ csl: Harvard2.csl
 library(foreign)
 library(knitr)
 library(metafor)
-setwd("") test
+#setwd("") test
 ```
 
 # Meta analysis Basics
@@ -99,32 +100,66 @@ Other data & \textit{User-specified} & None & None\\
 Some notes:
 
 * An "effect" could be almost any aggregate statistic of interest:
-    * Mean, Mean difference, Mean change
-    * Risk ratio, Odds ratio, Risk difference
-    * Incidence rate, Prevalence, Proportion
-    * Correlation
+    * Mean, Mean difference, Mean change (Continuous)
+    * Risk ratio, Odds ratio, Risk difference (Dichotomous)
+    * Incidence rate, Prevalence, Proportion (Dichotomous)
+    * Correlation (Continuous)
+
 * Conventional meta-analytic models assume normality of ESs.
+
 * To normalize ESs, a log-transform is common.
 
 Some examples and basic caluclation of the ESs are.
 
+
+Suppose we have an 2x2 matrix (dichotomous variable) like below:
+
+```{r 2x2 MatrixTable,echo=FALSE}
+M= matrix(c( "a "," b ","a+b" , "c ","d", "c+d","a+c ", "b+d ", "N"),nrow = 3,ncol = 3,dimnames = list(c("Disease = Yes","Disease = No","Total(arm)"), c("Treatment","Control","Total(Diseased or Not)")),byrow = T)
+kable(M)
+
+```
+
+Then the statistical results depending the meassure are:
+
 * Log-Odds Ratio: 
     * log(OR) = $log(\frac{a*d}{b*c})$
-    * log(V) = $\frac{1}{a} + \frac{1}{b}+ \frac{1}{c}+ \frac{1}{d}$
+    * SD(log(OR)) = $\sqrt{\frac{1}{a} + \frac{1}{b}+ \frac{1}{c}+ \frac{1}{d}}$
 * Log-Relative Risk:
     * log(RR) = $log(\frac{a/a+b}{c/c+d})$
-    * log(V) = $\frac{1}{a} + \frac{1}{c}+ \frac{1}{a+b}+ \frac{1}{c+d}$
-* Incidence rate
-    * log(IR) =  $log(\frac{a/a+b}{c/c+d})$
-    * 
+    * SD(log(RR)) = $\sqrt{\frac{1}{a} + \frac{1}{c}+ \frac{1}{a+b}+ \frac{1}{c+d}}$
 * Risk Difference:
-    * $\frac{a}{a+b} - \frac{c}{c+d}$
-    * Variance= $\frac{axb}{(a+b)^3} - \frac{cxd}{(c+d)^3}$
+    * log(RR) = $\sqrt{\frac{a}{a+b} - \frac{c}{c+d}}$
+    * SD(log(RD)) = $\sqrt{\frac{a*b}{(a+b)^3} - \frac{cxd}{(c*d)^3}}$
 
+Sometimes we meassure the person time so the 2x2 matrix is:
+
+```{r 2x2 Matrix Table with Person Time,echo=FALSE}
+M= matrix(c( "a "," b ", "c(Total Events) ","T0", "T1 ", "Tall(Total Time)"),nrow = 2,ncol = 3,dimnames = list(c("Events","Person Time"), c("Treatment","Control","Total")),byrow = T)
+kable(M)
+
+```
+
+Then we may get:
+
+* Incidence rate
+    * log(IR) = $\frac{a/T_0}{b/T_1}$
+    * SD(log(IR)) = $\sqrt{\frac{1}{a} + \frac{1}{b}}$
+
+* Prevalence
+  
+* Proportion
 
 \newpage 
 
 # Fixed Effects Model 
+
+The fixed effects model approach is the simplest one and assumes that all included studies have zero $\tau^2$ heterogeneity because it assumes that they investigate the same population, use the same variable and outcome definitions, etc. This assumption is rare because researchs are subject to various sources of heterogeneity. As we may immediately understand the treatment effects may be different because of deviation such as regional, dosage levels, study conditions etc. 
+The fixed effects model is a weighted average of all the studies gathered. The weight is calculated by a variety of methods, most popular are :
+
+* The Inverse Variance 
+* Mantel-Haenszel
+* Peto
 
 The **beta_full_prac1.dta** file contains results from 20 randomized clinical trials on the use of beta-blockers for the prevention of esophageal bleeding in patients with cirrhosis. 
 
@@ -146,23 +181,24 @@ kable(Meta_data, caption =  "The  20 randomized clinical trials")
 Other variables are described by the corresponding variable labels.
 
 
-## Inverse Variance weights
-A good package for Metanalysis is the `metafor` which provides a more step by step procedure.
-Firstly we shall calculate effect sizes (in our case Odds Ratios) and outcome measures we are interested in, using the `escalc() function`. The `escalc() function` main option is the measure, in which we declare the E.S. or outcome measure that will be calculated. Since we choose the Odds Ratio we need to provide the a, b etc for each 2x2 matrix.
+## Inverse Variance Method
+
+A good package for Metanalysis is the `metafor` package,  which provides a more step by step procedure on calculating the Effect Size and it's pooled Estimate.
+Firstly we shall calculate effect sizes (in our case Odds Ratios) and outcome measures we are interested in, using the `escalc()` function. The `escalc()` function main option is the measure, in which we declare the E.S. or outcome measure that will be calculated. Since we choose the Odds Ratio we need to provide the a, b etc from each 2x2 matrix.
 
 For example for the ith study the matrix is:
 
 ```{r 2x2MatrixTable,echo=FALSE}
-M= matrix(c( "a (Tcases)"," b (Ccases)","a+b" , "c (Tnocases)",
-"d (Cnocases) ", "c+d","a+c (Ttotal)", "b+d (Ctotal)", "N"),nrow = 3,ncol = 3,dimnames = list(c("Disease = Yes","Disease = No",""), c("Treatment","Control","Total")),byrow = T)
+M= matrix(c( "a (Tcases)"," b (Ccases)","a+b (TotCases)" , "c (Tnocases)",
+"d (Cnocases) ", "c+d (TotNocases)","a+c (Ttotal)", "b+d (Ctotal)", "N (Total)"),nrow = 3,ncol = 3,dimnames = list(c("Disease = Yes","Disease = No",""), c("Treatment","Control","Total")),byrow = T)
 kable(M)
 
 ```
 
-So we input the a, b, c, d, n1,n2 needed to calculate the log-OR for each study.
+So we input the a, b, c, d, n1 (a+b),n2 (c+d) needed to calculate the log-OR for each study, resulting in the following output.
 
 
-```{r ecalc,echo=FALSE}
+```{r summary dat,echo=FALSE,comment="",message=FALSE}
 
 dat<-escalc("OR", ai = Meta_data$Tcases, 
             bi =  Meta_data$Tnocases, 
@@ -171,10 +207,7 @@ dat<-escalc("OR", ai = Meta_data$Tcases,
             n1i = Meta_data$Ttotal , 
             n2i = Meta_data$Ctotal   )
 
-```
 
-
-```{r summary dat,echo=FALSE,comment="",message=FALSE}
 kable(summary(dat),caption = "Log-Scale Odds Ratios, Variance, 
       Standard Error and 95% CI bounds")
 ```
@@ -188,36 +221,45 @@ The output:
 * `ci.lb`: The Lower bound C.I.
 * `ci.ub`: The Upper bound C.I.
 
-Since everything is calculated in the log scale, we need to exponentiate the measure we are interested.
+Since everything is calculated in the log scale, we need to exponentiate the measures we are interested.
 
 ```{r RMA.Fixed,echo=FALSE,comment="",fig.height=9}
 kable(exp(summary(dat)[1:5,c(1,5,6)]),caption = "First 5 studies Odds Ratio with 95% bounds of each study")
+```
 
-res <- rma(yi, vi, data=dat, measure="OR", method="FE",digits = 3)
+For the overall Fixed effects model with IV weights we may use the `rma` function. The `rma` function takes as an input the $y_i, v_i$ that are calculated by the `ecalc` finction we used before the ES we are calculating , the  method `fixed` in this case while the digits option is needed for declaring in which deximal shall we round the results.
+
+```{r RMA.Fixed.Results,comment="",fig.height=10}
+res <- rma(yi  ## log(OR)
+           ,vi ## Var(log(OR)) 
+           , data=dat ## Output Dataset of ecalc
+           , measure="OR", method="FE",
+           digits = 3)
+summary(res)
 ```
 
 
-```{r RMA.Fixed.Results,echo=FALSE,comment="",fig.height=10}
-res
-```
+In the summary above we may observe that the overall Fixed Effects model Estimate is log_Odds: `r round(as.numeric(res$b),3)` ( `r round(exp(as.numeric(res$b)),2)` exponentiated) with 95% C.I. 
+(`r paste(c(round(as.numeric(res$ci.lb),2) ,round(as.numeric(res$ci.ub),2)), collapse="," )`) , [`r paste(c(round(exp(as.numeric(res$ci.lb)),2) ,round(exp(as.numeric(res$ci.ub)),2)), collapse="," )`] exponentiated. The result is `r ifelse(round(res$pval,3)>=0.05,print("not"),print(""))` statistically significant in the 5% level of significance since `r ifelse(round(res$pval,3)==0,print("p-value<.001"),print(paste("p-value",round(res$pval,3),"=")))`. The summary also suggests that the studies are `r ifelse(round(res$QEp,3)>=0.05,print("not"),print(""))` Heterogeneous since Q Test for Heterogeneity `r ifelse(round(res$QEp,3)==0,print("p-value<.001"),print(paste("p-value",round(res$QEp,3),"=")))`. 
 
+The test of heterogeneity is a $\chi^2$ test with k= `r res$k - 1` degrees of freedom where k is the number of the studies minus 1.
 
-In the summary above we may observe that the overall Fixed Effects model Estimate is log_Odds: -0.4807 (0.62 exponentiated) with 95% C.I. (-0.7137 ,-0.2476 ) in exponentiated form [0.49,0.78], the result is statistically significant in the 5% level of significance. The summary also suggests that the studies are highly Heterogeneous with p-value lower than 0.0001 !! The test of heterogeneity is a $\chi^2$ test with k degrees of freedom where k is the number of the studies -1.
+The forest plot is a good graphical method in order to present the Efects Sizes, the CIs and the weights of each study. In our case we have the *default* Inverse-Variance weighting method.
 
-
-```{r Forest Fixed,comment="",fig.height=9}
+```{r Forest Fixed,echo=FALSE,comment="",fig.height=9}
 
 forest(res,showweights = T,col="red", atransf = exp,refline = 0,
        alim=c(-5,max(as.numeric(res$yi.f + 1.96*sqrt(res$vi.f))))
        )
-text(-21, 21, "Author(s) and Year", pos=4,cex = 0.55)
-text( 11, 21, "Weights", pos=2,cex = 0.55)
-text( 20, 21, "Odds Ratios [95% CI]", pos=2,cex=0.55)
+text(-22.5, 21, "Studies", pos=4,cex = 0.85)
+text( 9, 21, "Weights", pos=2,cex = 0.85)
+text( -1,22," Forest Plot with Weights")
+text( 20, 21, "Odds Ratios [95% CI]", pos=2,cex=0.85)
 ```
 
-Further more we can observe the cumulative Forest plot with ordering in order to better observe the effect of each study.
+Further more we may draw the cumulative Forest plot  to better observe the pooled effect size how this is changes by adding one by one the studies. It is common to use an ordering (for example the size of each study, or it's Variance etc.)
 
-```{r Cumulative Fixed Forest,comment="",fig.height=9,echo=FALSE}
+```{r Cumulative Fixed Forest,echo=FALSE,comment="",fig.height=9,echo=FALSE}
 ### cumulative meta-analysis (in the order of publication year)
 Meta_data$weights <- 1/res$vi
 Meta_data$weights <- Meta_data$weights/sum(Meta_data$weights, na.rm = TRUE)
@@ -226,69 +268,116 @@ tmp <- cumul(res, order=order(Meta_data$weights))
 forest(tmp,atransf = exp,refline = 0,
        alim=c(-5,max(as.numeric(res$yi.f + 1.96*sqrt(res$vi.f))))
        )
-text(-6, 21, "Author(s) and Year", pos=2,cex = 0.65)
-text( 9, 21, "Odds Ratios [95% CI]", pos=2,cex=0.65)
+text(-8, 21, "Studies", pos=2,cex = 0.85)
+text( -1,22,"Cumulative Forest Plot (ordered By Weight)")
+text( 8.5, 21, "Odds Ratios [95% CI]", pos=2,cex=0.85)
 ```
 
 
-A funnel plot shows the observed effect sizes or outcomes on the x-axis against some measure of precision of the observed effect sizes or outcomes on the y-axis. Based on Sterne and Egger (2001), the recommended choice for the y-axis is the standard error (in decreasing order) and this is also the default for the funnel() function in the metafor package. In the absence of publication bias and heterogeneity, one would then expect to see the points forming a funnel shape, with the majority of the points falling inside of the pseudo-confidence region with bounds 
+Finaly we may draw a funnel plot, that shows the observed effect sizes or outcomes on the x-axis against some measure of precision of the observed effect sizes or outcomes on the y-axis. Based on Sterne and Egger [@Sterne_2001], the recommended choice for the y-axis is the standard error (in decreasing order) and this is also the default for the funnel() function in the metafor package. In the absence of publication bias and heterogeneity, one would then expect to see the points forming a funnel shape, with the majority of the points falling inside of the pseudo-confidence region with bounds 
 $\hat{\theta} \pm SE$, where  $\hat{\theta}$ is the estimated effect or outcome based on the fixed-effects model and 
 SE is the standard error value from the y-axis. With other measures of precision for the y-axis, the expected shape of the funnel can be rather different. The plot below shows a variety of choices for the y-axis and how this impacts the shape of the funnel plot (and the form of the pseudo-confidence region). Furthermore we can add various levels of significance in order to create a Contour-like Funnelplot. 
 
 Various levels of statistical significance of the points/studies are indicated by the shaded regions. In particular, the unshaded (i.e., white) region in the middle corresponds to p-values greater than .10, the gray-shaded region corresponds to p-values between .10 and .05, the dark gray-shaded region corresponds to p-values between .05 and .01, and the region outside of the funnel corresponds to p-values below .01. Funnel plots drawn in this way are more useful for detecting publication bias due to the suppression of non-significant findings.
 
 
-```{r Funnel.Fixed,echo=FALSE,message=FALSE,warning=FALSE,fig.height= 7.5}
-### set up 2x2 array for plotting
-par(mfrow=c(2,2))
- 
-### draw funnel plots
-funnel(res, level=c(90, 95, 99), shade=c("white", "gray", "darkgray"), main="Standard Error",addtau2 = T)
-funnel(res,level=c(90, 95, 99), yaxis="vi", main="Sampling Variance")
-funnel(res,level=c(90, 95, 99), yaxis="seinv", main="Inverse Standard Error")
-funnel(res,level=c(90, 95, 99), yaxis="vinv", main="Inverse Sampling Variance")
+```{r Funnel.Fixed,echo=FALSE,message=FALSE,warning=FALSE}
 
+### draw funnel plots
+funnel(res, level=c(90, 95, 99), shade=c("white", "gray", "darkgray"), 
+       main="Standard Error")
+text(-0.2,1, round(res$b,3), pos=1)
 ```
 
-### Mantel-Haenszel weights
-In `metafor` package the *default* weighting method is the Inverse-Variance as shown before. Sometime it is better to use in Metanalysis the M-H weighting method.
-So if that was the case then we would have the following results:
+```{r Funnel.Fixed2,echo=FALSE,message=FALSE,warning=FALSE,fig.height=9}
+### set up 3x1 array for plotting
+par(mfrow=c(3,1))
+funnel(res,level=c(90, 95, 99),shade=c("white", "gray", "darkgray"), yaxis="vi", main="Sampling Variance")
+text(-0.2,1.25, round(res$b,3), pos=1)
+funnel(res,level=c(90, 95, 99),shade=c("white", "gray", "darkgray"), yaxis="seinv", main="Inverse Standard Error")
+text(-0.2,1.25, round(res$b,3), pos=1)
+funnel(res,level=c(90, 95, 99),shade=c("white", "gray", "darkgray"), yaxis="vinv", main="Inverse Sampling Variance")
+text(-0.2,1.75, round(res$b,3), pos=1)
+```
+
+
+\newpage
+
+## Mantel-Haenszel Method
+
+In `metafor` package the *default* method is the Inverse-Variance as shown before. Sometime it is better to use in Metanalysis the M-H method, because of it's simplicity plus some statistical packages have Mantel-Haenszel Method as a default.
+The procedure is not the same, beacause we do not need to calculate the Effect sizes with the `escalc` function and store them into a Data-Set. The `rma.mh` needs the $a_i ,b_i, c_i ,d_i ,n1_i,$ and $n2_i$ of the 2x2 matrix, the meassure (OR(default), RR,RD,IRD,IRR, etc).
 
 ```{r M-H.RMA,comment=""}
-res<-rma.mh("OR", ai = Meta_data$Tcases, 
-            bi =  Meta_data$Tnocases, 
-            ci =  Meta_data$Ccases,  
-            di = Meta_data$Cnocases, 
-            n1i = Meta_data$Ttotal , 
-            n2i = Meta_data$Ctotal ,digits = 3  )
+
+res<-rma.mh("OR", ai = Meta_data$Tcases, bi =  Meta_data$Tnocases, 
+            ci =  Meta_data$Ccases,  di = Meta_data$Cnocases, 
+            n1i = Meta_data$Ttotal , n2i = Meta_data$Ctotal ,
+            digits = 3  )
 res
 ```
 
-In the summary above we may observe that the overall Fixed Effects model Estimate is log_Odds: -0.5271 (0.59 exponentiated) with 95% C.I. (-0.7412,-0.3131) in exponentiated form [0.48,0.73], the result is statistically significant in the 5% level of significance. The summary also suggests that the studies are highly Heterogeneous with p-value lower than 0.0001.
 
-The forest plot is a little bit different also:
+In the summary above we may observe that the overall Fixed Effects model Estimate is log_Odds: `r round(as.numeric(res$b),3)` ( `r round(exp(as.numeric(res$b)),2)` exponentiated) with 95% C.I. 
+(`r paste(c(round(as.numeric(res$ci.lb),2) ,round(as.numeric(res$ci.ub),2)), collapse="," )`) , [`r paste(c(round(exp(as.numeric(res$ci.lb)),2) ,round(exp(as.numeric(res$ci.ub)),2)), collapse="," )`] exponentiated. The result is `r ifelse(round(res$pval,3)>=0.05,print("not"),print(""))` statistically significant in the 5% level of significance since `r ifelse(round(res$pval,3)==0,print("p-value<.001"),print(paste("p-value",round(res$pval,3),"=")))`. The summary also suggests that the studies are `r ifelse(round(res$QEp,3)>=0.05,print("not"),print(""))` Heterogeneous since Q Test for Heterogeneity `r ifelse(round(res$QEp,3)==0,print("p-value<.001"),print(paste("p-value",round(res$QEp,3),"=")))`. 
+
+The Mantel-Haenszel summary estimates also the Cochran-Mantel-Haenszel Test and the Tarone's Test for Heterogeneity. 
+Cochran-Mantel-Haenszel Test hypothesis is a chi-squared test with Hypothesis testing:
+
+$H_0$: Two nominal variables are conditionally independent in each stratum (2x2 matrix)
+
+$H_1$: otherwise
+
+The Tarone's Test for Heterogeneity is similar with the Q-test.
+
+The forest plot is obviously a bit different also because the weights are calculated with another method described in the next chapter.
 
 ```{r Forest M-H, echo=FALSE,comment="",fig.height=9}
 forest(res,showweights = T,col="red", atransf = exp,refline = 0,
        alim=c(-5,max(as.numeric(res$yi.f + 1.96*sqrt(res$vi.f))))
        )
+text(-20, 21, "Studies", pos=4,cex = 0.85)
+text( 10, 21, "Weights", pos=2,cex = 0.85)
+text( -1,22," Mantel-Haenszel Forest Plot with Weights")
+text( 20, 21, "Odds Ratios [95% CI]", pos=2,cex=0.85)
 ```
 
-And the funnel plots:
+And we can draw the same funnel plots:
  
 ```{r Funnel M-H,echo=FALSE,message=FALSE,warning=FALSE,fig.height= 7.5}
-### set up 2x2 array for plotting
+### set up 3x1 array for plotting
 par(mfrow=c(2,2))
- 
 ### draw funnel plots
-funnel(res, main="Standard Error",addtau2 = T,steps = 10)
-funnel(res, yaxis="vi", main="Sampling Variance")
-funnel(res, yaxis="seinv", main="Inverse Standard Error")
-funnel(res, yaxis="vinv", main="Inverse Sampling Variance")
-
+funnel(res, level=c(90, 95, 99), shade=c("white", "gray", "darkgray"), 
+       main="Standard Error")
+text(-0.2,1, round(res$b,3), pos=1)
+funnel(res,level=c(90, 95, 99),shade=c("white", "gray", "darkgray"), yaxis="vi", main="Sampling Variance")
+text(-0.2,1.25, round(res$b,3), pos=1)
+funnel(res,level=c(90, 95, 99),shade=c("white", "gray", "darkgray"), yaxis="seinv", main="Inverse Standard Error")
+text(-0.2,1.25, round(res$b,3), pos=1)
+funnel(res,level=c(90, 95, 99),shade=c("white", "gray", "darkgray"), yaxis="vinv", main="Inverse Sampling Variance")
+text(-0.2,1.75, round(res$b,3), pos=1)
 ```
 
 \newpage
+
+## Peto Method
+
+
+Another method for pooling odds ratios across the strata of the 2x2 matrices is Peto's method, not mathematically equal to the classical odds ratio. The Peto odds ratio can cause bias, especially when there is a substantial difference between the treatment and control group sizes, but it peforms well in many situations.
+
+```{r}
+res<-rma.peto("OR", ai = Meta_data$Tcases, 
+            bi =  Meta_data$Tnocases, 
+            ci =  Meta_data$Ccases,  
+            di = Meta_data$Cnocases, 
+            n1i = Meta_data$Ttotal , 
+            n2i = Meta_data$Ctotal ,digits = 3)
+summary(res)
+```
+
+
+
 
 # Calculate Fixed-Effects Model by hand
 ## Effect size calculation and CI bounds
@@ -298,8 +387,8 @@ The Odds Ratio is calculated from the **2x2 matrix** of each study.
 
 
 ```{r 2x2 Matrix OR,echo=FALSE}
-M= matrix(c( "a (Tcases)"," b (Ccases)","a+b" , "c (Tnocases)",
-"d (Cnocases) ", "c+d","a+c (Ttotal)", "b+d (Ctotal)", "N"),nrow = 3,ncol = 3,dimnames = list(c("Disease = Yes","Disease = No",""), c("Treatment","Control","Total")),byrow = T)
+M= matrix(c( "a (Tcases)"," b (Ccases)","a+b (TotCases)" , "c (Tnocases)",
+"d (Cnocases) ", "c+d(TotNotCases)","a+c (Ttotal)", "b+d (Ctotal)", "N"),nrow = 3,ncol = 3,dimnames = list(c("Disease = Yes","Disease = No",""), c("Treatment","Control","Total")),byrow = T)
 kable(M)
 
 ```
@@ -310,8 +399,12 @@ As we can see we miss the $c_i$ and $d_i$ but we can easily count them subtracti
 
 ```{r}
 
+
+Meta_data$TotCases=with(Meta_data,Tcases + Ccases)
+
 Meta_data$Tnocases = with(Meta_data,Ttotal-Tcases)
 Meta_data$Cnocases = with(Meta_data,Ctotal-Ccases)
+Meta_data$TotNoCases=with(Meta_data,Tnocases + Cnocases)
 ```
 
 Now we can easily calculate the Odds Ratio of each study.
@@ -377,7 +470,7 @@ ${\bar {logOR_{pooledIV}}}={\frac {w_{1}logOR_{1}+w_{2}logOR_{2}+\cdots +w_{n}lo
 
 \newpage
 
-### Mantel-Haenszel weight calculation
+## Mantel-Haenszel weight calculation
 
 In STATA the *default* weight calculation method is the Mantel-Haenszel which is calculated as shown below:
 
@@ -418,6 +511,33 @@ MH_OR=sum_wOR/sumW
 MH_OR
 
 ```
+
+
+
+## Peto Method and Weights
+
+
+The Peto method is calculating the Peto Odds Ratio a different approach than te classical Odds Ratio. In the typical 2x2 OR=$\frac{a*d}{b*c}$ while in the Peto method we first calculate: 
+
+* The Expected= $\frac{(a+b)(a+c)}{N}$ 
+* The Variance equals $\frac{(a+b)(c+d)(a+c)(b+d)}{n^2(n-1)}$ 
+* and finally the $\hat{OR_{Peto}}= exp(\frac{O - E}{V})$
+
+
+
+In order to calculate by hand using the Peto method we need to estimate the $\hat{OR}_{Peto.pooled}$ which as  
+
+```{r Expected}
+Meta_data$Expected= (Meta_data$TotCases)*(Meta_data$Ttotal)/Meta_data$Total 
+Meta_data$Variance= Meta_data$Ttotal*Meta_data$Ctotal*Meta_data$TotNoCases*Meta_data$TotCases/(Meta_data$Total)^2/(Meta_data$Total -1)
+
+Meta_data$OR = exp((Meta_data$Tcases - Meta_data$Expected)/(Meta_data$Variance) )
+
+
+```
+
+
+
 
 # Random effects model
 
@@ -604,3 +724,8 @@ colnames(results) <- c("DL", "HE", "PM", "HS", "SJ", "ML", "REML", "EB", "SJ2", 
 round(t(results), 4)
 ```
 
+
+
+
+
+# References
