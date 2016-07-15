@@ -251,7 +251,7 @@ summary(res)
 
 
 In the summary above we may observe that the overall Fixed Effects model Estimate is log_Odds: `r round(as.numeric(res$b),3)` ( `r round(exp(as.numeric(res$b)),2)` exponentiated) with 95% C.I. 
-(`r paste(c(round(as.numeric(res$ci.lb),2) ,round(as.numeric(res$ci.ub),2)), collapse="," )`) , [`r paste(c(round(exp(as.numeric(res$ci.lb)),2) ,round(exp(as.numeric(res$ci.ub)),2)), collapse="," )`] exponentiated. The result is `r ifelse(round(res$pval,3)>=0.05,print("not"),print(""))` statistically significant in the 5% level of significance since `r ifelse(round(res$pval,3)==0,print("p-value<.001"),print(paste("p-value",round(res$pval,3),"=")))`. The summary also suggests that the studies are `r ifelse(round(res$QEp,3)>=0.05,print("not"),print(""))` Heterogeneous since Q Test for Heterogeneity `r ifelse(round(res$QEp,3)==0,print("p-value<.001"),print(paste("p-value",round(res$QEp,3),"=")))`. 
+(`r paste(c(round(as.numeric(res$ci.lb),2) ,round(as.numeric(res$ci.ub),2)), collapse="," )`) , [`r paste(c(round(exp(as.numeric(res$ci.lb)),2) ,round(exp(as.numeric(res$ci.ub)),2)), collapse="," )`] exponentiated. The result is `r ifelse(round(res$pval,3)>=0.05,print("not"),print(""))` statistically significant in the 5% level of significance since `r ifelse(round(res$pval,3)==0,print("p-value<.001"),print(paste("p-value =",round(res$pval,3))))`. The summary also suggests that the studies are `r ifelse(round(res$QEp,3)>=0.05,print("not"),print(""))` Heterogeneous since Q Test for Heterogeneity `r ifelse(round(res$QEp,3)==0,print("p-value<.001"),print(paste("p-value = ",round(res$QEp,3))))`. 
 
 The test of heterogeneity is a $\chi^2$ test with k= `r res$k - 1` degrees of freedom where k is the number of the studies minus 1.
 
@@ -330,7 +330,7 @@ res
 
 
 In the summary above we may observe that the overall Fixed Effects model Estimate is log_Odds: `r round(as.numeric(res$b),3)` ( `r round(exp(as.numeric(res$b)),2)` exponentiated) with 95% C.I. 
-(`r paste(c(round(as.numeric(res$ci.lb),2) ,round(as.numeric(res$ci.ub),2)), collapse="," )`) , [`r paste(c(round(exp(as.numeric(res$ci.lb)),2) ,round(exp(as.numeric(res$ci.ub)),2)), collapse="," )`] exponentiated. The result is `r ifelse(round(res$pval,3)>=0.05,print("not"),print(""))` statistically significant in the 5% level of significance since `r ifelse(round(res$pval,3)==0,print("p-value<.001"),print(paste("p-value",round(res$pval,3),"=")))`. The summary also suggests that the studies are `r ifelse(round(res$QEp,3)>=0.05,print("not"),print(""))` Heterogeneous since Q Test for Heterogeneity `r ifelse(round(res$QEp,3)==0,print("p-value<.001"),print(paste("p-value",round(res$QEp,3),"=")))`. 
+(`r paste(c(round(as.numeric(res$ci.lb),2) ,round(as.numeric(res$ci.ub),2)), collapse="," )`) , [`r paste(c(round(exp(as.numeric(res$ci.lb)),2) ,round(exp(as.numeric(res$ci.ub)),2)), collapse="," )`] exponentiated. The result is `r ifelse(round(res$pval,3)>=0.05,print("not"),print(""))` statistically significant in the 5% level of significance since `r ifelse(round(res$pval,3)==0,print("p-value<.001"),print(paste("p-value =",round(res$pval,3))))`. The summary also suggests that the studies are `r ifelse(round(res$QEp,3)>=0.05,print("not"),print(""))` Heterogeneous since Q Test for Heterogeneity `r ifelse(round(res$QEp,3)==0,print("p-value<.001"),print(paste("p-value =",round(res$QEp,3))))`. 
 
 The Mantel-Haenszel summary estimates also the Cochran-Mantel-Haenszel Test and the Tarone's Test for Heterogeneity. 
 Cochran-Mantel-Haenszel Test hypothesis is a chi-squared test with Hypothesis testing:
@@ -569,7 +569,7 @@ Mathematical perception if :
 * and approx. 95% CI for $\theta_i : y_i \pm 1.96 \sqrt{v_i}$ 
 
 where $y_i$ denotes the observed effect in the i-th study, $\theta_i$ the corresponding (unknown) true effect, $\epsilon_i$ is the sampling error and $\epsilon_i$ ~ $N(0,v_i)$ and  $u_i$ ~ N(0, $\tau^2$).
-Furthemore, beacause of the calculation of the $\tau$ and the addition to the model, the weights change completely and sometimes this is used for reducing the weight of a study with a very small Variance (large Studies). 
+Furthemore, because of the calculation of the $\tau^2$ and the addition to the model, the weights change completely and sometimes this is used for reducing the weight of a study with a very small Variance (large Studies). 
 In the following example we will demonstrate clearly the difference that may occur if we have a big study in our Meta-Analysis and the necessity of a random effects model.
 The `magnes.dta` file contains results from 16 randomized clinical trials that were designed to investigate the effect of magnesium intake on mortality of patients with acute myocardial infarction.
 The file is described below:
@@ -584,13 +584,10 @@ kable(Meta_data)
 * The columns named `tot` are showing the  total amount of patients in Treatment (1) and Control (0), while 
 * The `dead` columns shows the diseased in Treatment (1) and Control (0). 
 
-We shall calculate the summary estimator for the death Odds Ratio  and create the corresponding forest-plot both in fixed (I-V weighting method) and random effects (DL) approach.
-
-\newpage
-
+We shall calculate the summary estimator for the death's Odds Ratio and create the corresponding forest-plot both in fixed (Inverse Variance method) and random effects (DerSimonian-Laird) approach.
 First we have the Fixed-effects model.
 
-```{r MH Results ,echo=FALSE,fig.height= 12,fig.width= 9,comment=""}
+```{r Fixed Effects Results ,echo=FALSE,fig.height= 12,fig.width= 9,comment=""}
 dat<-escalc("OR", 
             ai = Meta_data$dead1,
             bi =  Meta_data$tot1-Meta_data$dead1,
@@ -600,33 +597,32 @@ dat<-escalc("OR",
             n2i = Meta_data$tot0  )
 
 
-res1 <- rma( dat$yi  ,dat$vi, data=dat, measure="OR", method="FE",digits = 3,
+res <- rma( dat$yi  ,dat$vi, data=dat, measure="OR", method="FE",digits = 3,
                slab=paste(Meta_data$trial,Meta_data$trialnam, Meta_data$year, sep=", "))
-summary(res1)
+summary(res)
 ```
 
 
-In the summary above we may observe that the overall Random Effects model Estimate is log_Odds: `r round(as.numeric(res1$b),3)` ( `r round(exp(as.numeric(res1$b)),3)` exponentiated) with 95% C.I. 
-(`r paste(c(round(as.numeric(res1$ci.lb),2) ,round(as.numeric(res1$ci.ub),2)), collapse="," )`) , [`r paste(c(round(exp(as.numeric(res1$ci.lb)),2) ,round(exp(as.numeric(res1$ci.ub)),2)), collapse="," )`] exponentiated . The result is not statistically significant in the 5% level of significance since p-value = `r round(res1$pval,2)`. The summary also suggests that the studies are highly Heterogeneous with p-value lower than 0.0001. 
-
+In the summary above we may observe that the overall Fixed Effects model Estimate is log_Odds: `r round(as.numeric(res$b),3)` ( `r round(exp(as.numeric(res$b)),2)` exponentiated) with 95% C.I. 
+(`r paste(c(round(as.numeric(res$ci.lb),2) ,round(as.numeric(res$ci.ub),2)), collapse="," )`) , [`r paste(c(round(exp(as.numeric(res$ci.lb)),2) ,round(exp(as.numeric(res$ci.ub)),2)), collapse="," )`] exponentiated. The result is `r ifelse(round(res$pval,3)>=0.05,print("not"),print(""))` statistically significant in the 5% level of significance since `r ifelse(round(res$pval,3)==0,print("p-value<.001"),print(paste("p-value =",round(res$pval,3),"")))`. The summary also suggests that the studies are `r ifelse(round(res$QEp,3)>=0.05,print("not"),print(""))` Heterogeneous since Q Test for Heterogeneity `r ifelse(round(res$QEp,3)==0,print("p-value<.001"),print(paste("p-value =",round(res$QEp,3))))`. 
 Let's have a look in the forest plot.
 
-```{r MH Forest,echo=FALSE,fig.height= 12,fig.width= 9,comment=""}
-forest(res1,showweights = T,col="red", atransf = exp,refline = 0,
-       alim=c(-5,max(as.numeric(res1$yi.f + 1.96*sqrt(res1$vi.f))))
+```{r Fixed Effects Forest,echo=FALSE,fig.height= 12,fig.width= 9,comment=""}
+forest(res,showweights = T,col="red", atransf = exp,refline = 0,
+       alim=c(-5,max(as.numeric(res$yi.f + 1.96*sqrt(res$vi.f))))
        )
 
 ```
 
-As we may observe there is a study (ISIS-4) that has nearly the 93% of the total weight and although it seems that all the studies have a lower than 1 odds ratio this study pulls the overall pooled MH Odds Ratio to above 1.
+As we may observe there is a study (ISIS-4) that has nearly the 93% of the total weight and although it seems that all the studies have a lower than 1 odds ratio this study pulls the overall pooled MH Odds Ratio to above 1. Although it seems to be a ptotective effect the ISIS is resulting to a non-significant result.
 
 \newpage
 
 ## DerSimonian-Laird estimator
 
-A good solution is to use the Random-Effects model, that will reduce the weight of this study. The default estimator is the DerSimonian-Laird, that is making the weights to be more uniformly distributed.
+A good solution is to use the Random-Effects model, that will reduce the weight of this study. The default estimator is the DerSimonian-Laird,.
 
-```{r DL.Random Results,fig.height= 12,fig.width= 9,comment="",echo=FALSE}
+```{r DL Random Effects Results,comment="",echo=FALSE}
 res <- rma(yi, vi, data=dat, measure="OR", method="DL",digits = 3,
            slab=paste(Meta_data$trial,Meta_data$trialnam, Meta_data$year, sep=", "))
 summary(res)
@@ -646,11 +642,30 @@ Finally the $H^2$ is a measure of variability
 
 The forest plot is a little bit different also. The weights have changed and now ISIS-4 has a weight nearly 17%.
 
-```{r DL.Random Forest,fig.height= 12,fig.width= 9,comment="",echo=FALSE}
+```{r DL.Random Forest,fig.height= 9,comment="",echo=FALSE}
 forest(res,showweights = T,col="red", atransf = exp,refline = 0,
        alim=c(-5,max(as.numeric(res$yi.f + 1.96*sqrt(res$vi.f))))
        )
+text(-17, 18, "Studies", pos=4,cex = 1)
+text( 8, 18, "Weights", pos=2,cex = 0.85)
+text( -1,19," Random Effect Forest Plot \n (DL Estimator)")
+text( 17, 18, "Odds Ratios [95% CI]", pos=2,cex=0.85)
+```
 
+
+```{r Funnel D-L,echo=FALSE,message=FALSE,warning=FALSE,fig.height= 7.5}
+### set up 3x1 array for plotting
+par(mfrow=c(2,2))
+### draw funnel plots
+funnel(res, level=c(90, 95, 99), shade=c("white", "gray", "darkgray"), 
+       main="Standard Error")
+text(-0.2,1, round(res$b,3), pos=1)
+funnel(res,level=c(90, 95, 99),shade=c("white", "gray", "darkgray"), yaxis="vi", main="Sampling Variance")
+text(-0.2,1.25, round(res$b,3), pos=1)
+funnel(res,level=c(90, 95, 99),shade=c("white", "gray", "darkgray"), yaxis="seinv", main="Inverse Standard Error")
+text(-0.2,1.25, round(res$b,3), pos=1)
+funnel(res,level=c(90, 95, 99),shade=c("white", "gray", "darkgray"), yaxis="vinv", main="Inverse Sampling Variance")
+text(-0.2,1.75, round(res$b,3), pos=1)
 ```
 
 \newpage
@@ -682,8 +697,8 @@ text(2,blups, labels = res$slab, pos = 4)
 
 \newpage
 
-## Weight Calculation
-### DerSimonian-Laird (default) method 
+# Calculation Random-Effects by hand
+## DerSimonian-Laird (default) estimator 
 
 The weights in the DerSimonian-Laird method are calculated through the following equations.
 $W_i= \frac{1}{v_i + \tau^2}$ and then we calculate as usual a weighted average for the log(OR)=$\bar{logOR}= \frac{\sum_{1}^{k}W_i*OR_i}{\sum_{1}^{k}W_i} \Rightarrow \bar{OR}= exp(logOR))$
