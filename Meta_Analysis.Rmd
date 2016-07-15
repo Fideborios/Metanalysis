@@ -154,7 +154,15 @@ Then we may get:
 
 # Fixed Effects Model 
 
-The fixed effects model approach is the simplest one and assumes that all included studies have zero $\tau^2$ heterogeneity because it assumes that they investigate the same population, use the same variable and outcome definitions, etc. This assumption is rare because researchs are subject to various sources of heterogeneity. As we may immediately understand the treatment effects may be different because of deviation such as regional, dosage levels, study conditions etc. 
+The fixed effects model approach is the simplest one and assumes that all included studies have zero $\tau^2$ heterogeneity because it assumes that they investigate the same population, use the same variable and outcome definitions, etc.  In Mathematical preception if :
+
+*  we have i = 1, … , k studies
+* have $y_i$ and corresponding $v_i$
+* we assume  that $y_i|\theta_i ~ N(\theta_i,v_i)$
+* and approx. 95% CI for $\theta_i : y_i \pm 1.96 \sqrt{v_i}$
+
+
+This assumption is rare because researchs are subject to various sources of heterogeneity. As we may immediately understand the treatment effects may be different because of deviation such as regional, dosage levels, study conditions etc. 
 The fixed effects model is a weighted average of all the studies gathered. The weight is calculated by a variety of methods, most popular are :
 
 * The Inverse Variance 
@@ -180,6 +188,7 @@ kable(Meta_data, caption =  "The  20 randomized clinical trials")
 * The quality variable contains a score of "quality" of each study based on several criteria (quality of randomization, compliance, patient withdrawals, etc.). The range of the variable that ranges from 0 to 100 (higher values indicate better quality studies) whereas for studies published only as abstracts there is no recorded value. 
 Other variables are described by the corresponding variable labels.
 
+\newpage
 
 ## Inverse Variance Method
 
@@ -330,7 +339,7 @@ $H_1$: otherwise
 
 The Tarone's Test for Heterogeneity is similar with the Q-test.
 
-The forest plot is obviously a bit different also because the weights are calculated with another method described in the next chapter.
+The forest plot is obviously a bit different also because the weights are calculated with another method described in the next chapter(4.3) .
 
 ```{r Forest M-H, echo=FALSE,comment="",fig.height=9}
 forest(res,showweights = T,col="red", atransf = exp,refline = 0,
@@ -366,7 +375,7 @@ text(-0.2,1.75, round(res$b,3), pos=1)
 
 Another method for pooling odds ratios across the strata of the 2x2 matrices is Peto's method, not mathematically equal to the classical odds ratio. The Peto odds ratio can cause bias, especially when there is a substantial difference between the treatment and control group sizes, but it peforms well in many situations.
 
-```{r}
+```{r Peto RMA,comment=""}
 res<-rma.peto("OR", ai = Meta_data$Tcases, 
             bi =  Meta_data$Tnocases, 
             ci =  Meta_data$Ccases,  
@@ -378,12 +387,13 @@ summary(res)
 
 
 
+\newpage
 
-# Calculate Fixed-Effects Model by hand
-## Effect size calculation and CI bounds
+# Calculate Fixed-Effects Models by hand
+## Effect size calculation and CI bounds 
 
 We will calculate "by hand" the fixed-effects summary estimator of Odds Ratio using data on the number of patients with and without occurrence of bleeding in each arm of the respective study. 
-The Odds Ratio is calculated from the **2x2 matrix** of each study.
+The Odds Ratio is calculated from the **2x2 matrix** of each study. 
 
 
 ```{r 2x2 Matrix OR,echo=FALSE}
@@ -393,9 +403,9 @@ kable(M)
 
 ```
 
-with the following type : $OR=(a*d)/(b*c)$
+with the following type : $OR=(a*d)/(b*c)$ and is used in the Inverase-Variance and Mantel-Haenszel method, while in Peto there is another calculation of the OR.
 
-As we can see we miss the $c_i$ and $d_i$ but we can easily count them subtracting the cases from the total number of patients.
+As we can see in our Data-Set we miss the $c_i$ and $d_i$ but we can easily count them subtracting the cases from the total number of patients.
 
 ```{r}
 
@@ -513,6 +523,7 @@ MH_OR
 ```
 
 
+\newpage
 
 ## Peto Method and Weights
 
@@ -538,6 +549,7 @@ Meta_data$OR = exp((Meta_data$Tcases - Meta_data$Expected)/(Meta_data$Variance) 
 
 
 
+\newpage
 
 # Random effects model
 
@@ -647,6 +659,7 @@ text(1,exp(dat$yi), labels = res$slab, pos = 4)
 text(2,blups, labels = res$slab, pos = 4)
 ```
 
+\newpage
 
 ## Weight Calculation
 ### DerSimonian-Laird (default) method 
@@ -662,6 +675,7 @@ exp(sum(wi*res$yi)/sum(wi))
 ```
 
 
+\newpage
 
 ### Other Estimators
 
