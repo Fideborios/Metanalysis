@@ -555,6 +555,7 @@ Meta_data$OR = exp((Meta_data$Tcases - Meta_data$Expected)/(Meta_data$Variance) 
 
 # Random effects model
 
+
 Most cases the Fixed-Effects model would be completely wrong, both Mathematically and Intuitively.
 In the Random- Effects modeling we assume that for various reasons (Differences in  methods and sample characteristics) heterogeneity exists  and we treat it as purely random. The Heterogeneity is symbolized with $\tau^2$, which we have seen in the summaries of the Fixed-Eggects Models.
 Mathematical perception if :
@@ -571,7 +572,6 @@ where $y_i$ denotes the observed effect in the i-th study, $\theta_i$ the corres
 Furthemore, beacause of the calculation of the $\tau$ and the addition to the model, the weights change completely and sometimes this is used for reducing the weight of a study with a very small Variance (large Studies). 
 In the following example we will demonstrate clearly the difference that may occur if we have a big study in our Meta-Analysis and the necessity of a random effects model.
 The `magnes.dta` file contains results from 16 randomized clinical trials that were designed to investigate the effect of magnesium intake on mortality of patients with acute myocardial infarction.
-
 The file is described below:
 
 ```{r Loading magnes.dta,echo=FALSE,comment=""}
@@ -619,7 +619,12 @@ forest(res1,showweights = T,col="red", atransf = exp,refline = 0,
 ```
 
 As we may observe there is a study (ISIS-4) that has nearly the 93% of the total weight and although it seems that all the studies have a lower than 1 odds ratio this study pulls the overall pooled MH Odds Ratio to above 1.
-A good solution is to use the Random-Effects model, that will reduce the weight of this study. The method we choose is the DerSimonian-Laird, that is making the weights to be more uniformly distributed.
+
+\newpage
+
+## DerSimonian-Laird estimator
+
+A good solution is to use the Random-Effects model, that will reduce the weight of this study. The default estimator is the DerSimonian-Laird, that is making the weights to be more uniformly distributed.
 
 ```{r DL.Random Results,fig.height= 12,fig.width= 9,comment="",echo=FALSE}
 res <- rma(yi, vi, data=dat, measure="OR", method="DL",digits = 3,
@@ -696,7 +701,7 @@ exp(sum(wi*res$yi)/sum(wi))
 ### Other Estimators
 
 The DerSimonian-Laird estimation is the most simple of all and is the default method in R, Stata and SAS.
-But there are seven other estimation methods :
+But there are other estimation methods :
 
 * Hedges (‘variance component estimator’ or ‘Cochran estimator’) estimator
 * Hunter-Schmidt estimator
