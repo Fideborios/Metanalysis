@@ -568,7 +568,6 @@ Mathematical perception if :
 * and approx. 95% CI for $\theta_i : y_i \pm 1.96 \sqrt{v_i}$ 
 
 where $y_i$ denotes the observed effect in the i-th study, $\theta_i$ the corresponding (unknown) true effect, $\epsilon_i$ is the sampling error and $\epsilon_i$ ~ $N(0,v_i)$ and  $u_i$ ~ N(0, $\tau^2$).
-
 Furthemore, beacause of the calculation of the $\tau$ and the addition to the model, the weights change completely and sometimes this is used for reducing the weight of a study with a very small Variance (large Studies). 
 In the following example we will demonstrate clearly the difference that may occur if we have a big study in our Meta-Analysis and the necessity of a random effects model.
 The `magnes.dta` file contains results from 16 randomized clinical trials that were designed to investigate the effect of magnesium intake on mortality of patients with acute myocardial infarction.
