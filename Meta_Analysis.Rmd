@@ -109,7 +109,7 @@ Some notes:
 
 * To normalize ESs, a log-transform is common.
 
-Some examples and basic caluclation of the ESs are.
+Some examples and basic calculation of the ESs are.
 
 
 Suppose we have an 2x2 matrix (dichotomous variable) like below:
@@ -120,7 +120,7 @@ kable(M)
 
 ```
 
-Then the statistical results depending the meassure are:
+Then the statistical results depending the measure are:
 
 * Log-Odds Ratio: 
     * log(OR) = $log(\frac{a*d}{b*c})$
@@ -132,7 +132,7 @@ Then the statistical results depending the meassure are:
     * log(RR) = $\sqrt{\frac{a}{a+b} - \frac{c}{c+d}}$
     * SD(log(RD)) = $\sqrt{\frac{a*b}{(a+b)^3} - \frac{cxd}{(c*d)^3}}$
 
-Sometimes we meassure the person time so the 2x2 matrix is:
+Sometimes we measure the person time so the 2x2 matrix is:
 
 ```{r 2x2 Matrix Table with Person Time,echo=FALSE}
 M= matrix(c( "a "," b ", "c(Total Events) ","T0", "T1 ", "Tall(Total Time)"),nrow = 2,ncol = 3,dimnames = list(c("Events","Person Time"), c("Treatment","Control","Total")),byrow = T)
@@ -154,20 +154,22 @@ Then we may get:
 
 # Fixed Effects Model 
 
-The fixed effects model approach is the simplest one and assumes that all included studies have zero $\tau^2$ heterogeneity because it assumes that they investigate the same population, use the same variable and outcome definitions, etc.  In Mathematical preception if :
+The fixed effects model approach is the simplest one and assumes that all included studies have zero $\tau^2$ heterogeneity because it assumes that they investigate the same population, use the same variable and outcome definitions, etc.  In Mathematical perception if :
 
 *  we have i = 1, … , k studies
 * have $y_i$ and corresponding $v_i$
-* we assume  that $y_i|\theta_i ~ N(\theta_i,v_i)$
+* we assume  that 
+    * $y_i | \theta_i$ ~ $N(\theta_i,v_i)$
+    * $y_i = \theta_i + \epsilon_i$ 
 * and approx. 95% CI for $\theta_i : y_i \pm 1.96 \sqrt{v_i}$
 
-
-This assumption is rare because researchs are subject to various sources of heterogeneity. As we may immediately understand the treatment effects may be different because of deviation such as regional, dosage levels, study conditions etc. 
-The fixed effects model is a weighted average of all the studies gathered. The weight is calculated by a variety of methods, most popular are :
+where $y_i$ denotes the observed effect in the i-th study, $\theta_i$ the corresponding (unknown) true effect, $\epsilon_i$ is the sampling error and $\epsilon_i$ ~ $N(0,v_i)$.
+This assumption is rarely true, because researches are subject to various sources of heterogeneity. As we may immediately understand the treatment effects may be different because of deviation such as regional, dosage levels, study conditions etc. 
+The fixed effects model is a weighted average of all the studies gathered. The weights are calculated by a variety of methods, most popular are :
 
 * The Inverse Variance 
 * Mantel-Haenszel
-* Peto
+* Peto (an Inverse Variance weighting method on different OR)
 
 The **beta_full_prac1.dta** file contains results from 20 randomized clinical trials on the use of beta-blockers for the prevention of esophageal bleeding in patients with cirrhosis. 
 
@@ -236,7 +238,7 @@ Since everything is calculated in the log scale, we need to exponentiate the mea
 kable(exp(summary(dat)[1:5,c(1,5,6)]),caption = "First 5 studies Odds Ratio with 95% bounds of each study")
 ```
 
-For the overall Fixed effects model with IV weights we may use the `rma` function. The `rma` function takes as an input the $y_i, v_i$ that are calculated by the `ecalc` finction we used before the ES we are calculating , the  method `fixed` in this case while the digits option is needed for declaring in which deximal shall we round the results.
+For the overall Fixed effects model with IV weights we may use the `rma` function. The `rma` function takes as an input the $y_i, v_i$ that are calculated by the `ecalc` function we used before the ES we are calculating , the  method `fixed` in this case while the digits option is needed for declaring in which decimal shall we round the results.
 
 ```{r RMA.Fixed.Results,comment="",fig.height=10}
 res <- rma(yi  ## log(OR)
@@ -253,7 +255,7 @@ In the summary above we may observe that the overall Fixed Effects model Estimat
 
 The test of heterogeneity is a $\chi^2$ test with k= `r res$k - 1` degrees of freedom where k is the number of the studies minus 1.
 
-The forest plot is a good graphical method in order to present the Efects Sizes, the CIs and the weights of each study. In our case we have the *default* Inverse-Variance weighting method.
+The forest plot is a good graphical method in order to present the Effect Sizes, the CIs and the weights of each study. In our case we have the *default* Inverse-Variance weighting method.
 
 ```{r Forest Fixed,echo=FALSE,comment="",fig.height=9}
 
@@ -283,11 +285,11 @@ text( 8.5, 21, "Odds Ratios [95% CI]", pos=2,cex=0.85)
 ```
 
 
-Finaly we may draw a funnel plot, that shows the observed effect sizes or outcomes on the x-axis against some measure of precision of the observed effect sizes or outcomes on the y-axis. Based on Sterne and Egger [@Sterne_2001], the recommended choice for the y-axis is the standard error (in decreasing order) and this is also the default for the funnel() function in the metafor package. In the absence of publication bias and heterogeneity, one would then expect to see the points forming a funnel shape, with the majority of the points falling inside of the pseudo-confidence region with bounds 
+Finally we may draw a funnel plot, that shows the observed effect sizes or outcomes on the x-axis against some measure of precision of the observed effect sizes or outcomes on the y-axis. Based on Sterne and Egger [@Sterne_2001], the recommended choice for the y-axis is the standard error (in decreasing order) and this is also the default for the funnel() function in the metafor package. In the absence of publication bias and heterogeneity, one would then expect to see the points forming a funnel shape, with the majority of the points falling inside of the pseudo-confidence region with bounds 
 $\hat{\theta} \pm SE$, where  $\hat{\theta}$ is the estimated effect or outcome based on the fixed-effects model and 
-SE is the standard error value from the y-axis. With other measures of precision for the y-axis, the expected shape of the funnel can be rather different. The plot below shows a variety of choices for the y-axis and how this impacts the shape of the funnel plot (and the form of the pseudo-confidence region). Furthermore we can add various levels of significance in order to create a Contour-like Funnelplot. 
+SE is the standard error value from the y-axis. With other measures of precision for the y-axis, the expected shape of the funnel can be rather different. The plot below shows a variety of choices for the y-axis and how this impacts the shape of the funnel plot (and the form of the pseudo-confidence region). Furthermore we can add various levels of significance in order to create a Contour-like Funnel-plot. 
 
-Various levels of statistical significance of the points/studies are indicated by the shaded regions. In particular, the unshaded (i.e., white) region in the middle corresponds to p-values greater than .10, the gray-shaded region corresponds to p-values between .10 and .05, the dark gray-shaded region corresponds to p-values between .05 and .01, and the region outside of the funnel corresponds to p-values below .01. Funnel plots drawn in this way are more useful for detecting publication bias due to the suppression of non-significant findings.
+Various levels of statistical significance of the points/studies are indicated by the shaded regions. In particular, the unshaded (i.e., white) region in the middle corresponds to p-values greater than .10, the Gray-shaded region corresponds to p-values between .10 and .05, the dark Gray-shaded region corresponds to p-values between .05 and .01, and the region outside of the funnel corresponds to p-values below .01. Funnel plots drawn in this way are more useful for detecting publication bias due to the suppression of non-significant findings.
 
 
 ```{r Funnel.Fixed,echo=FALSE,message=FALSE,warning=FALSE}
@@ -315,7 +317,7 @@ text(-0.2,1.75, round(res$b,3), pos=1)
 ## Mantel-Haenszel Method
 
 In `metafor` package the *default* method is the Inverse-Variance as shown before. Sometime it is better to use in Metanalysis the M-H method, because of it's simplicity plus some statistical packages have Mantel-Haenszel Method as a default.
-The procedure is not the same, beacause we do not need to calculate the Effect sizes with the `escalc` function and store them into a Data-Set. The `rma.mh` needs the $a_i ,b_i, c_i ,d_i ,n1_i,$ and $n2_i$ of the 2x2 matrix, the meassure (OR(default), RR,RD,IRD,IRR, etc).
+The procedure is not the same, because we do not need to calculate the Effect sizes with the `escalc` function and store them into a Data-Set. The `rma.mh` needs the $a_i ,b_i, c_i ,d_i ,n1_i,$ and $n2_i$ of the 2x2 matrix, the measure (OR(default), RR,RD,IRD,IRR, etc).
 
 ```{r M-H.RMA,comment=""}
 
@@ -373,7 +375,7 @@ text(-0.2,1.75, round(res$b,3), pos=1)
 ## Peto Method
 
 
-Another method for pooling odds ratios across the strata of the 2x2 matrices is Peto's method, not mathematically equal to the classical odds ratio. The Peto odds ratio can cause bias, especially when there is a substantial difference between the treatment and control group sizes, but it peforms well in many situations.
+Another method for pooling odds ratios across the strata of the 2x2 matrices is Peto's method, not mathematically equal to the classical odds ratio. The Peto odds ratio can cause bias, especially when there is a substantial difference between the treatment and control group sizes, but it performs well in many situations.
 
 ```{r Peto RMA,comment=""}
 res<-rma.peto("OR", ai = Meta_data$Tcases, 
@@ -403,7 +405,7 @@ kable(M)
 
 ```
 
-with the following type : $OR=(a*d)/(b*c)$ and is used in the Inverase-Variance and Mantel-Haenszel method, while in Peto there is another calculation of the OR.
+with the following type : $OR=(a*d)/(b*c)$ and is used in the Inverse-Variance and Mantel-Haenszel method, while in Peto there is another calculation of the OR.
 
 As we can see in our Data-Set we miss the $c_i$ and $d_i$ but we can easily count them subtracting the cases from the total number of patients.
 
@@ -528,7 +530,7 @@ MH_OR
 ## Peto Method and Weights
 
 
-The Peto method is calculating the Peto Odds Ratio a different approach than te classical Odds Ratio. In the typical 2x2 OR=$\frac{a*d}{b*c}$ while in the Peto method we first calculate: 
+The Peto method is calculating the Peto Odds Ratio a different approach than the classical Odds Ratio. In the typical 2x2 OR=$\frac{a*d}{b*c}$ while in the Peto method we first calculate: 
 
 * The Expected= $\frac{(a+b)(a+c)}{N}$ 
 * The Variance equals $\frac{(a+b)(c+d)(a+c)(b+d)}{n^2(n-1)}$ 
@@ -553,7 +555,22 @@ Meta_data$OR = exp((Meta_data$Tcases - Meta_data$Expected)/(Meta_data$Variance) 
 
 # Random effects model
 
-In this example we will demonstrate clearly the difference that may occur if we have a huge study in our Meta-Analysis and the necessity of a random effects model.
+Most cases the Fixed-Effects model would be completely wrong, both Mathematically and Intuitively.
+In the Random- Effects modeling we assume that for various reasons (Differences in  methods and sample characteristics) heterogeneity exists  and we treat it as purely random. The Heterogeneity is symbolized with $\tau^2$, which we have seen in the summaries of the Fixed-Eggects Models.
+Mathematical perception if :
+
+*  we have i = 1, … , k studies
+* have $y_i$ and corresponding $v_i$
+* we assume  that 
+    * $y_i | \theta_i$ ~ $N(\theta_i,v_i)$
+    * $\theta_i = \mu + u_i$
+    * $y_i = \mu + u_i + \epsilon_i$ 
+* and approx. 95% CI for $\theta_i : y_i \pm 1.96 \sqrt{v_i}$ 
+
+where $y_i$ denotes the observed effect in the i-th study, $\theta_i$ the corresponding (unknown) true effect, $\epsilon_i$ is the sampling error and $\epsilon_i$ ~ $N(0,v_i)$ and  $u_i$ ~ N(0, $\tau^2$).
+
+Furthemore, beacause of the calculation of the $\tau$ and the addition to the model, the weights change completely and sometimes this is used for reducing the weight of a study with a very small Variance (large Studies). 
+In the following example we will demonstrate clearly the difference that may occur if we have a big study in our Meta-Analysis and the necessity of a random effects model.
 The `magnes.dta` file contains results from 16 randomized clinical trials that were designed to investigate the effect of magnesium intake on mortality of patients with acute myocardial infarction.
 
 The file is described below:
